@@ -10,6 +10,8 @@ public:
     AudioPluginAudioProcessor();
     ~AudioPluginAudioProcessor() override;
 
+    juce::AudioProcessorValueTreeState apvts;
+
     //==============================================================================
     void prepareToPlay (double sampleRate, int samplesPerBlock) override;
     void releaseResources() override;
