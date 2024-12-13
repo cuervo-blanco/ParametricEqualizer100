@@ -350,33 +350,79 @@ void AudioPluginAudioProcessor::processBlock (
     juce::ignoreUnused (midiMessages);
     juce::ScopedNoDenormals noDenormals;
 
+    double sampleRate = getSampleRate();
+
+    double highPassFreq = *apvts.getRawParameterValue("HPFREQ");
+    double lowPassFreq = *apvts.getRawParameterValue("LPFREQ");
+
+    double bell1Freq = *apvts.getRawParameterValue("BELL1FREQ");
+    double bell1Gain = *apvts.getRawParameterValue("BELL1GAIN");
+    double bell1Q = *apvts.getRawParameterValue("BELL1Q");
+
+    double bell2Freq = *apvts.getRawParameterValue("BELL2FREQ");
+    double bell2Gain = *apvts.getRawParameterValue("BELL2GAIN");
+    double bell2Q = *apvts.getRawParameterValue("BELL2Q");
+    
+    double bell3Freq = *apvts.getRawParameterValue("BELL3FREQ");
+    double bell3Gain = *apvts.getRawParameterValue("BELL3GAIN");
+    double bell3Q = *apvts.getRawParameterValue("BELL3Q");
+
+    bool isLowShelfMode = *apvts.getRawParameterValue("ISLOWSHELFMODE") > 0.5f;
+    bool isHighShelfMode = *apvts.getRawParameterValue("ISHIGHSHELFMODE") > 0.5f;
+
+    // Using the EQ Cookbook formulas:
+    auto highPassCoefs = makeHighPass(sampleRate, highPassFreq, 0.707); // Q=0.707 as an example
+    highPassFilter.setCoefficients(highPassCoefs[0], highPassCoefs[1], highPassCoefs[2], 
+                                   highPassCoefs[3], highPassCoefs[4], highPassCoefs[5]);
+    // Choose between the Low Shelf and the bell 3
+    if (isLowShelfMode) {
+        auto lowShelfCoefs = makeLowShelf(sampleRate, bell1Freq, bell1Q, bell1Gain);
+        bell1Filter.setCoefficients(lowShelfCoefs[0], lowShelfCoefs[1], lowShelfCoefs[2],
+                                    lowShelfCoefs[3], lowShelfCoefs[4], lowShelfCoefs[5]);
+    }
+    else {
+        auto bell1Coefs = makePeaking(sampleRate, bell1Freq, bell1Q, bell1Gain);
+        bell1Filter.setCoefficients(bell1Coefs[0], bell1Coefs[1], bell1Coefs[2],
+                bell1Coefs[3], bell1Coefs[4], bell1Coefs[5]);
+    }
+    auto bell2Coefs = makePeaking(sampleRate, bell2Freq, bell2Q, bell2Gain);
+    bell2Filter.setCoefficients(bell2Coefs[0], bell2Coefs[1], bell2Coefs[2],
+                                bell2Coefs[3], bell2Coefs[4], bell2Coefs[5]);
+    // Choose between the High Shelf and the bell 3
+    if (isHighShelfMode) {
+        auto highShelfCoefs = makeHighShelf(sampleRate, bell3Freq, bell3Q, bell3Gain);
+        bell3Filter.setCoefficients(highShelfCoefs[0], highShelfCoefs[1], highShelfCoefs[2],
+                                    highShelfCoefs[3], highShelfCoefs[4], highShelfCoefs[5]);
+    }
+    else {
+        auto bell3Coefs = makePeaking(sampleRate, bell3Freq, bell3Q, bell3Gain);
+        bell3Filter.setCoefficients(bell3Coefs[0], bell3Coefs[1], bell3Coefs[2],
+                bell3Coefs[3], bell3Coefs[4], bell3Coefs[5]);
+    }
+    auto lowPassCoefs = makeLowPass(sampleRate, lowPassFreq, 0.707);
+    lowPassFilter.setCoefficients(lowPassCoefs[0], lowPassCoefs[1], lowPassCoefs[2],
+                                  lowPassCoefs[3], lowPassCoefs[4], lowPassCoefs[5]);
+
     auto totalNumInputChannels  = getTotalNumInputChannels();
     auto totalNumOutputChannels = getTotalNumOutputChannels();
 
-    // Clear extra channels
     for (auto i = totalNumInputChannels; i < totalNumOutputChannels; ++i)
         buffer.clear(i, 0, buffer.getNumSamples());
 
-    // Assuming stereo processing. If mono, just one channel loop.
     for (int channel = 0; channel < totalNumInputChannels; ++channel)
     {
-        float* channelData = buffer.getWritePointer (channel);
-
+        float* channelData = buffer.getWritePointer(channel);
         for (int n = 0; n < buffer.getNumSamples(); ++n)
         {
             float sample = channelData[n];
-
-            // Pass through filters:
             sample = highPassFilter.processSample(sample);
             sample = bell1Filter.processSample(sample);
             sample = bell2Filter.processSample(sample);
             sample = bell3Filter.processSample(sample);
             sample = lowPassFilter.processSample(sample);
-
             channelData[n] = sample;
         }
-    }
-}
+    }}
 
 //==============================================================================
 bool AudioPluginAudioProcessor::hasEditor() const
