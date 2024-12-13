@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.30.1)
 
-project(ParametricEqualizer)
+project(ParametricEqualizer100)
 
 set(CMAKE_CXX_STANDARD 20)
 

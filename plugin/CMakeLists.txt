@@ -10,7 +10,7 @@ juce_add_plugin(${PROJECT_NAME}
     NEEDS_MIDI_INPUT FALSE
     NEEDS_MIDI_OUTPUT FALSE
     PLUGIN_MANUFACTURER_CODE TRIC
-    PLUGIN_CODE PAREQ
+    PLUGIN_CODE GREQ
     FORMATS Standalone VST3
     PRODUCT_NAME "ParametricEqualizer100"
 )
@@ -26,6 +26,8 @@ target_sources(${PROJECT_NAME}
 target_include_directories(${PROJECT_NAME}
     PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/include
+    ${CMAKE_CURRENT_SOURCE_DIR}/../libs/juce
+    ${CMAKE_CURRENT_BINARY_DIR}
 )
 
 target_link_libraries(${PROJECT_NAME}

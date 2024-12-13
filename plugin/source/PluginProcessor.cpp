@@ -1,47 +1,9 @@
-#include "PluginProcessor.h"
-#include "PluginEditor.h"
+#include "ParametricEqualizer100/PluginProcessor.h"
+#include "ParametricEqualizer100/PluginEditor.h"
 #include <juce_audio_processors/juce_audio_processors.h>
+#include <cmath>
 
-
-struct BiquadFilter
-{
-    double b0 = 1.0, b1 = 0.0, b2 = 0.0;
-    double a0 = 1.0, a1 = 0.0, a2 = 0.0;
-
-    // State:
-    double z1 = 0.0, z2 = 0.0;
-
-    void setCoefficients(
-            double b0_, 
-            double b1_, 
-            double b2_, 
-            double a0_, 
-            double a1_, 
-            double a2_)
-    {
-        b0 = b0_; b1 = b1_; b2 = b2_;
-        a0 = a0_; a1 = a1_; a2 = a2_;
-    }
-
-    void reset()
-    {
-        z1 = 0.0;
-        z2 = 0.0;
-    }
-
-    float processSample(float x)
-    {
-        // Direct Form II implementation
-        double w = x - a1/a0*z1 - a2/a0*z2;
-        double y = b0/a0*w + b1/a0*z1 + b2/a0*z2;
-        z2 = z1;
-        z1 = w;
-        return (float) y;
-    }
-};
-
-
-//==============================================================================
+// Constructor
 AudioPluginAudioProcessor::AudioPluginAudioProcessor()
      : AudioProcessor (BusesProperties()
                      #if ! JucePlugin_IsMidiEffect
@@ -51,38 +13,34 @@ AudioPluginAudioProcessor::AudioPluginAudioProcessor()
                        .withOutput ("Output", juce::AudioChannelSet::stereo(), true)
                      #endif
                        ),
-     apvts(*this, nullptr, "PARAMS", createParameterLayout())
-{
+     apvts(*this, nullptr, "PARAMS", createParameterLayout()) {
+// Set any default parameters ?
 }
 
-AudioPluginAudioProcessor::~AudioPluginAudioProcessor()
-{
+AudioPluginAudioProcessor::~AudioPluginAudioProcessor() {
 }
 
 // Parameter Layout
 juce::AudioProcessorValueTreeState::ParameterLayout AudioPluginAudioProcessor::createParameterLayout()
 {
     std::vector<std::unique_ptr<juce::RangedAudioParameter>> params;
-
     // High Pass
     params.push_back(std::make_unique<juce::AudioParameterFloat>(
                 "HPFREQ",   // ID
                 "High Pass Frequency", // name
-                juce::NormalisableRange<float>(20.0f, 20000.0f, 0.01f, 0.5f),
+                juce::NormalisableRange<float>(0.0f, 20000.0f, 0.01f, 0.5f),
                                                                  30.0f)); // default value
-
     // Low Pass
     params.push_back(std::make_unique<juce::AudioParameterFloat>(
                 "LPFREQ", 
                 "Low Pass Frequency",
-                juce::NormalisableRange<float>(20.0f, 20000.0f, 0.01f, 0.5f),
+                juce::NormalisableRange<float>(0.0f, 20000.0f, 0.01f, 0.5f),
                                                                  18000.0f));
-
     // Bell 1
     params.push_back(std::make_unique<juce::AudioParameterFloat>(
                 "BELL1FREQ", 
                 "Bell1 Frequency",
-                juce::NormalisableRange<float>(20.0f, 20000.0f, 0.01f, 0.5f),
+                juce::NormalisableRange<float>(0.0f, 20000.0f, 0.01f, 0.5f),
                                                                  200.0f));
 
     params.push_back(std::make_unique<juce::AudioParameterFloat>(
@@ -101,7 +59,7 @@ juce::AudioProcessorValueTreeState::ParameterLayout AudioPluginAudioProcessor::c
     params.push_back(std::make_unique<juce::AudioParameterFloat>(
                 "BELL2FREQ", 
                 "Bell2 Frequency", 
-                juce::NormalisableRange<float>(20.0f, 20000.0f, 0.01f, 0.5f), 1000.0f));
+                juce::NormalisableRange<float>(0.0f, 20000.0f, 0.01f, 0.5f), 1000.0f));
 
     params.push_back(std::make_unique<juce::AudioParameterFloat>(
                 "BELL2GAIN", 
@@ -117,7 +75,7 @@ juce::AudioProcessorValueTreeState::ParameterLayout AudioPluginAudioProcessor::c
     params.push_back(std::make_unique<juce::AudioParameterFloat>(
                 "BELL3FREQ", 
                 "Bell3 Frequency", 
-                juce::NormalisableRange<float>(20.0f, 20000.0f, 0.01f, 0.5f), 5000.0f));
+                juce::NormalisableRange<float>(0.0f, 20000.0f, 0.01f, 0.5f), 5000.0f));
 
     params.push_back(std::make_unique<juce::AudioParameterFloat>(
                 "BELL3GAIN", 
@@ -144,13 +102,11 @@ juce::AudioProcessorValueTreeState::ParameterLayout AudioPluginAudioProcessor::c
 }
 
 //==============================================================================
-const juce::String AudioPluginAudioProcessor::getName() const
-{
+const juce::String AudioPluginAudioProcessor::getName() const {
     return JucePlugin_Name;
 }
 
-bool AudioPluginAudioProcessor::acceptsMidi() const
-{
+bool AudioPluginAudioProcessor::acceptsMidi() const {
    #if JucePlugin_WantsMidiInput
     return true;
    #else
@@ -158,8 +114,7 @@ bool AudioPluginAudioProcessor::acceptsMidi() const
    #endif
 }
 
-bool AudioPluginAudioProcessor::producesMidi() const
-{
+bool AudioPluginAudioProcessor::producesMidi() const {
    #if JucePlugin_ProducesMidiOutput
     return true;
    #else
@@ -167,8 +122,7 @@ bool AudioPluginAudioProcessor::producesMidi() const
    #endif
 }
 
-bool AudioPluginAudioProcessor::isMidiEffect() const
-{
+bool AudioPluginAudioProcessor::isMidiEffect() const {
    #if JucePlugin_IsMidiEffect
     return true;
    #else
@@ -176,44 +130,39 @@ bool AudioPluginAudioProcessor::isMidiEffect() const
    #endif
 }
 
-double AudioPluginAudioProcessor::getTailLengthSeconds() const
-{
+double AudioPluginAudioProcessor::getTailLengthSeconds() const {
     return 0.0;
 }
-
 //==============================================================================
 // Program Stuff (Old School Presets)
-
-int AudioPluginAudioProcessor::getNumPrograms()
-{
+int AudioPluginAudioProcessor::getNumPrograms() {
     return 1;   // NB: some hosts don't cope very well if you tell them there are 0 programs,
                 // so this should be at least 1, even if you're not really implementing programs.
 }
 
-int AudioPluginAudioProcessor::getCurrentProgram()
-{
+int AudioPluginAudioProcessor::getCurrentProgram() {
     return 0;
 }
 
-void AudioPluginAudioProcessor::setCurrentProgram (int index)
-{
+void AudioPluginAudioProcessor::setCurrentProgram (int index) {
     juce::ignoreUnused (index);
 }
 
-const juce::String AudioPluginAudioProcessor::getProgramName (int index)
-{
+const juce::String AudioPluginAudioProcessor::getProgramName (int index) {
     juce::ignoreUnused (index);
     return {};
 }
 
-void AudioPluginAudioProcessor::changeProgramName (int index, const juce::String& newName)
-{
+void AudioPluginAudioProcessor::changeProgramName (
+        int index, const juce::String& newName
+        ) {
     juce::ignoreUnused (index, newName);
 }
 
 //==============================================================================
-void AudioPluginAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
-{
+void AudioPluginAudioProcessor::prepareToPlay (
+        double sampleRate, int samplesPerBlock
+        ) {
     juce::ignoreUnused (samplesPerBlock);
 
     highPassFilter.reset();
@@ -244,45 +193,34 @@ void AudioPluginAudioProcessor::prepareToPlay (double sampleRate, int samplesPer
     auto highPassCoefs = makeHighPass(sampleRate, highPassFreq, 0.707); // Q=0.707 as an example
     highPassFilter.setCoefficients(highPassCoefs[0], highPassCoefs[1], highPassCoefs[2], 
                                    highPassCoefs[3], highPassCoefs[4], highPassCoefs[5]);
-
-
     // Choose between the Low Shelf and the bell 3
-    if (isLowShelfMode)
-    {
+    if (isLowShelfMode) {
         auto lowShelfCoefs = makeLowShelf(sampleRate, bell1Freq, bell1Q, bell1Gain);
-        bell2Filter.setCoefficients(lowShelfCoefs[0], lowShelfCoefs[1], lowShelfCoefs[2],
+        bell1Filter.setCoefficients(lowShelfCoefs[0], lowShelfCoefs[1], lowShelfCoefs[2],
                                     lowShelfCoefs[3], lowShelfCoefs[4], lowShelfCoefs[5]);
     }
-    else
-    {
+    else {
         auto bell1Coefs = makePeaking(sampleRate, bell1Freq, bell1Q, bell1Gain);
         bell1Filter.setCoefficients(bell1Coefs[0], bell1Coefs[1], bell1Coefs[2],
                 bell1Coefs[3], bell1Coefs[4], bell1Coefs[5]);
     }
-
     auto bell2Coefs = makePeaking(sampleRate, bell2Freq, bell2Q, bell2Gain);
     bell2Filter.setCoefficients(bell2Coefs[0], bell2Coefs[1], bell2Coefs[2],
                                 bell2Coefs[3], bell2Coefs[4], bell2Coefs[5]);
-
     // Choose between the High Shelf and the bell 3
-    if (isHighShelfMode)
-    {
+    if (isHighShelfMode) {
         auto highShelfCoefs = makeHighShelf(sampleRate, bell3Freq, bell3Q, bell3Gain);
-        bell2Filter.setCoefficients(highShelfCoefs[0], highShelfCoefs[1], highShelfCoefs[2],
+        bell3Filter.setCoefficients(highShelfCoefs[0], highShelfCoefs[1], highShelfCoefs[2],
                                     highShelfCoefs[3], highShelfCoefs[4], highShelfCoefs[5]);
     }
-    else
-    {
+    else {
         auto bell3Coefs = makePeaking(sampleRate, bell3Freq, bell3Q, bell3Gain);
         bell3Filter.setCoefficients(bell3Coefs[0], bell3Coefs[1], bell3Coefs[2],
                 bell3Coefs[3], bell3Coefs[4], bell3Coefs[5]);
     }
-
     auto lowPassCoefs = makeLowPass(sampleRate, lowPassFreq, 0.707);
     lowPassFilter.setCoefficients(lowPassCoefs[0], lowPassCoefs[1], lowPassCoefs[2],
                                   lowPassCoefs[3], lowPassCoefs[4], lowPassCoefs[5]);
-
-
 }
 
 std::array<double,6> AudioPluginAudioProcessor::makeLowPass(
