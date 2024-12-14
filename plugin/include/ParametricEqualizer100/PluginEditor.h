@@ -16,8 +16,6 @@ public:
 private:
     AudioPluginAudioProcessor& processorRef;
 
-    // Sliders and Attachments
-
     // High Pass
     juce::Slider hpFreqSlider;
     std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> hpFreqAttachment;

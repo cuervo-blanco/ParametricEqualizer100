@@ -135,7 +135,7 @@ void AudioPluginAudioProcessorEditor::paint (juce::Graphics& g)
 
 void AudioPluginAudioProcessorEditor::resized()
 {
-// We'll divide the layout into rows and columns for clarity.
+    // We'll divide the layout into rows and columns for clarity.
 
     // Top row: HP and LP
     // Second row: Bell1 (3 sliders)
