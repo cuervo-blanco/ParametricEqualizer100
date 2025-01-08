@@ -182,5 +182,6 @@ void AudioPluginAudioProcessorEditor::resized()
     // Shelf mode row
     auto shelfRow = area.removeFromTop(rowHeight);
     isLowShelfModeButton.setBounds(shelfRow.removeFromLeft(shelfRow.getWidth()/2).withSizeKeepingCentre(120, 24));
-    isHighShelfModeButton.setBounds(shelfRow.withSizeKeepingCentre(120, 24));}
+    isHighShelfModeButton.setBounds(shelfRow.withSizeKeepingCentre(120, 24));
+}
 

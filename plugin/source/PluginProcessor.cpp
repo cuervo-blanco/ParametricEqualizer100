@@ -42,62 +42,51 @@ juce::AudioProcessorValueTreeState::ParameterLayout AudioPluginAudioProcessor::c
                 "Bell1 Frequency",
                 juce::NormalisableRange<float>(0.0f, 20000.0f, 0.01f, 0.5f),
                                                                  200.0f));
-
     params.push_back(std::make_unique<juce::AudioParameterFloat>(
                 "BELL1GAIN", 
                 "Bell1 Gain (dB)",
                 juce::NormalisableRange<float>(-24.0f, 24.0f, 0.1f),
                                                              0.0f));
-
     params.push_back(std::make_unique<juce::AudioParameterFloat>(
                 "BELL1Q", 
                 "Bell1 Q",
                 juce::NormalisableRange<float>(0.1f, 10.0f, 0.01f),
                                                             0.707f));
-
     // Bell 2
     params.push_back(std::make_unique<juce::AudioParameterFloat>(
                 "BELL2FREQ", 
                 "Bell2 Frequency", 
                 juce::NormalisableRange<float>(0.0f, 20000.0f, 0.01f, 0.5f), 1000.0f));
-
     params.push_back(std::make_unique<juce::AudioParameterFloat>(
                 "BELL2GAIN", 
                 "Bell2 Gain (dB)", 
                 juce::NormalisableRange<float>(-24.0f, 24.0f, 0.1f), 3.0f));
-
     params.push_back(std::make_unique<juce::AudioParameterFloat>(
                 "BELL2Q",    
                 "Bell2 Q", 
                 juce::NormalisableRange<float>(0.1f, 10.0f, 0.01f), 0.707f));
-
     // Bell 3
     params.push_back(std::make_unique<juce::AudioParameterFloat>(
                 "BELL3FREQ", 
                 "Bell3 Frequency", 
                 juce::NormalisableRange<float>(0.0f, 20000.0f, 0.01f, 0.5f), 5000.0f));
-
     params.push_back(std::make_unique<juce::AudioParameterFloat>(
                 "BELL3GAIN", 
                 "Bell3 Gain (dB)", 
                 juce::NormalisableRange<float>(-24.0f, 24.0f, 0.1f), -2.0f));
-
     params.push_back(std::make_unique<juce::AudioParameterFloat>(
                 "BELL3Q",    
                 "Bell3 Q", 
                 juce::NormalisableRange<float>(0.1f, 10.0f, 0.01f), 0.707f));
-
     // Boolean parameters for shelf modes
     params.push_back(std::make_unique<juce::AudioParameterBool>(
                 "ISLOWSHELFMODE", 
                 "Is Low Shelf Mode", 
                 false));
-
     params.push_back(std::make_unique<juce::AudioParameterBool>(
                 "ISHIGHSHELFMODE",
                 "Is High Shelf Mode", 
                 false));
-
     return { params.begin(), params.end() };
 }
 
@@ -186,14 +175,16 @@ void AudioPluginAudioProcessor::prepareToPlay (
     double bell3Gain = *apvts.getRawParameterValue("BELL3GAIN");
     double bell3Q = *apvts.getRawParameterValue("BELL3Q");
 
-    bool isLowShelfMode = *apvts.getRawParameterValue("ISLOWSHELFMODE") > 0.5f;
-    bool isHighShelfMode = *apvts.getRawParameterValue("ISHIGHSHELFMODE") > 0.5f;
+    bool isLowShelfMode = *apvts
+        .getRawParameterValue("ISLOWSHELFMODE") > 0.5f;
+    bool isHighShelfMode = *apvts
+        .getRawParameterValue("ISHIGHSHELFMODE") > 0.5f;
 
     // Using the EQ Cookbook formulas:
     auto highPassCoefs = makeHighPass(sampleRate, highPassFreq, 0.707); // Q=0.707 as an example
     highPassFilter.setCoefficients(highPassCoefs[0], highPassCoefs[1], highPassCoefs[2], 
                                    highPassCoefs[3], highPassCoefs[4], highPassCoefs[5]);
-    // Choose between the Low Shelf and the bell 3
+    // Choose between the Low Shelf and the bell
     if (isLowShelfMode) {
         auto lowShelfCoefs = makeLowShelf(sampleRate, bell1Freq, bell1Q, bell1Gain);
         bell1Filter.setCoefficients(lowShelfCoefs[0], lowShelfCoefs[1], lowShelfCoefs[2],
@@ -207,7 +198,7 @@ void AudioPluginAudioProcessor::prepareToPlay (
     auto bell2Coefs = makePeaking(sampleRate, bell2Freq, bell2Q, bell2Gain);
     bell2Filter.setCoefficients(bell2Coefs[0], bell2Coefs[1], bell2Coefs[2],
                                 bell2Coefs[3], bell2Coefs[4], bell2Coefs[5]);
-    // Choose between the High Shelf and the bell 3
+    // Choose between the High Shelf and the bell
     if (isHighShelfMode) {
         auto highShelfCoefs = makeHighShelf(sampleRate, bell3Freq, bell3Q, bell3Gain);
         bell3Filter.setCoefficients(highShelfCoefs[0], highShelfCoefs[1], highShelfCoefs[2],
@@ -224,8 +215,7 @@ void AudioPluginAudioProcessor::prepareToPlay (
 }
 
 std::array<double,6> AudioPluginAudioProcessor::makeLowPass(
-        double sampleRate, double freq, double Q)
-{
+        double sampleRate, double freq, double Q) {
     double w0 = 2.0 * juce::MathConstants<double>::pi * (freq / sampleRate);
     double alpha = std::sin(w0)/(2.0*Q);
 
@@ -242,8 +232,7 @@ std::array<double,6> AudioPluginAudioProcessor::makeLowPass(
 }
 
 std::array<double,6> AudioPluginAudioProcessor::makeHighPass(
-        double sampleRate, double freq, double Q)
-{
+        double sampleRate, double freq, double Q) {
     double w0 = 2.0 * juce::MathConstants<double>::pi * (freq / sampleRate);
     double alpha = std::sin(w0)/(2.0*Q);
     double cosw0 = std::cos(w0);
@@ -259,8 +248,7 @@ std::array<double,6> AudioPluginAudioProcessor::makeHighPass(
 }
 
 std::array<double,6> AudioPluginAudioProcessor::makePeaking(
-        double sampleRate, double freq, double Q, double dBgain)
-{
+        double sampleRate, double freq, double Q, double dBgain) {
     double A = std::pow(10.0, dBgain / 40.0);
     double w0 = 2.0 * juce::MathConstants<double>::pi * (freq / sampleRate);
     double alpha = std::sin(w0)/(2.0*Q);
@@ -279,8 +267,7 @@ std::array<double,6> AudioPluginAudioProcessor::makePeaking(
 
 
 std::array<double,6> AudioPluginAudioProcessor::makeLowShelf(
-        double sampleRate, double freq, double Q, double dBgain)
-{
+        double sampleRate, double freq, double Q, double dBgain) {
     double A = std::pow(10.0, dBgain / 40.0);
     double w0 = 2.0 * juce::MathConstants<double>::pi * (freq / sampleRate);
     double alpha = std::sin(w0) / 2.0 * std::sqrt( (A + 1.0/A)*(1.0/Q - 1.0) + 2.0 );
@@ -297,8 +284,7 @@ std::array<double,6> AudioPluginAudioProcessor::makeLowShelf(
 }
 
 std::array<double,6> AudioPluginAudioProcessor::makeHighShelf(
-        double sampleRate, double freq, double Q, double dBgain)
-{
+        double sampleRate, double freq, double Q, double dBgain) {
     double A = std::pow(10.0, dBgain / 40.0);
     double w0 = 2.0 * juce::MathConstants<double>::pi * (freq / sampleRate);
     double alpha = std::sin(w0) / 2.0 * std::sqrt( (A + 1.0/A)*(1.0/Q - 1.0) + 2.0 );
@@ -314,8 +300,7 @@ std::array<double,6> AudioPluginAudioProcessor::makeHighShelf(
     return {b0, b1, b2, a0, a1, a2};
 }
 
-void AudioPluginAudioProcessor::releaseResources()
-{
+void AudioPluginAudioProcessor::releaseResources() {
     // When playback stops, you can use this as an opportunity to free up any
     // spare memory, etc.
 }
